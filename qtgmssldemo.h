@@ -17,6 +17,22 @@ public:
     QtGmsslDemo(QWidget *parent = nullptr);
     ~QtGmsslDemo();
 
+    void initView();
+    void initData();
+
+private slots:
+    void on_btnEncryption_clicked(bool checked);
+
+    void on_btnDecryption_clicked(bool checked);
+
+    void on_textPlain_textChanged(const QString &arg1);
+
+    void on_decStr_textChanged(const QString &arg1);
+
+    void on_comboBoxEncryType_currentIndexChanged(int index);
+
+    void on_comboBoxType_currentIndexChanged(int index);
+
 private:
     void gmsslTest();
 

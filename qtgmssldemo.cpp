@@ -13,12 +13,25 @@ QtGmsslDemo::QtGmsslDemo(QWidget *parent)
 {
     ui->setupUi(this);
 
+    initView();
+    initData();
+
     gmsslTest();
 }
 
 QtGmsslDemo::~QtGmsslDemo()
 {
     delete ui;
+}
+
+void QtGmsslDemo::initView()
+{
+    this->resize(1440, 900);
+}
+
+void QtGmsslDemo::initData()
+{
+
 }
 
 void QtGmsslDemo::gmsslTest()
@@ -120,3 +133,39 @@ void QtGmsslDemo::gmsslTest()
         pubkeyfp = nullptr;
     }
 }
+
+void QtGmsslDemo::on_btnEncryption_clicked(bool checked)
+{
+
+}
+
+
+void QtGmsslDemo::on_btnDecryption_clicked(bool checked)
+{
+
+}
+
+
+void QtGmsslDemo::on_textPlain_textChanged(const QString &arg1)
+{
+
+}
+
+
+void QtGmsslDemo::on_decStr_textChanged(const QString &arg1)
+{
+
+}
+
+
+void QtGmsslDemo::on_comboBoxEncryType_currentIndexChanged(int index)
+{
+
+}
+
+
+void QtGmsslDemo::on_comboBoxType_currentIndexChanged(int index)
+{
+
+}
+
