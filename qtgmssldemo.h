@@ -3,6 +3,9 @@
 
 #include <QMainWindow>
 
+#include "gmssl/sm2.h"
+#include "gmssl/mem.h"
+
 QT_BEGIN_NAMESPACE
 namespace Ui {
 class QtGmsslDemo;
@@ -34,9 +37,15 @@ private slots:
     void on_comboBoxType_currentIndexChanged(int index);
 
 private:
+    void loadSM2Key();
+
     void gmsslTest();
+
 
 private:
     Ui::QtGmsslDemo *ui;
+
+    SM2_KEY m_sm2_key;
+    SM2_KEY m_pub_key;
 };
 #endif // QTGMSSLDEMO_H
