@@ -37,15 +37,22 @@ private slots:
     void on_comboBoxType_currentIndexChanged(int index);
 
 private:
-    void loadSM2Key();
-
     void gmsslTest();
 
+    void loadSM2Key();
+
+    void loadKeyFormPem();
+
+    void loadKeyFormHex();
+
+    void savePrivateKeyToPem(SM2_KEY *priKey, const QString &path);
+
+    void savePublicKeyToPem(SM2_KEY *pubKey, const QString &path);
 
 private:
     Ui::QtGmsslDemo *ui;
 
-    SM2_KEY m_sm2_key;
-    SM2_KEY m_pub_key;
+    SM2_KEY m_sm2PriKey;
+    SM2_KEY m_sm2PubKey;
 };
 #endif // QTGMSSLDEMO_H

@@ -14,7 +14,7 @@
    <string>QtGmsslDemo</string>
   </property>
   <widget class="QWidget" name="centralwidget">
-   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,0,1">
+   <layout class="QVBoxLayout" name="verticalLayout" stretch="1,4,1">
     <property name="spacing">
      <number>20</number>
     </property>
