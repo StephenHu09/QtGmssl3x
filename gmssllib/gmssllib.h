@@ -24,6 +24,11 @@ public:
     QString sm2Decrypt(const QByteArray &ciphertext);
 
 signals:
+
+
+private:
+    QString m_privateKey;
+    QString m_publicKey;
 };
 
 #endif // GMSSLLIB_H

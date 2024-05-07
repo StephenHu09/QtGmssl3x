@@ -73,7 +73,7 @@
            <widget class="QLabel" name="label">
             <property name="minimumSize">
              <size>
-              <width>160</width>
+              <width>150</width>
               <height>0</height>
              </size>
             </property>
@@ -134,7 +134,7 @@
              </size>
             </property>
             <property name="text">
-             <string>私钥数据【HEX】：</string>
+             <string>私钥 SK【Hex】：</string>
             </property>
            </widget>
           </item>
@@ -171,7 +171,7 @@
              </size>
             </property>
             <property name="text">
-             <string>公钥数据【HEX】：</string>
+             <string>公钥 PK【Hex】：</string>
             </property>
            </widget>
           </item>
@@ -454,7 +454,7 @@
              </size>
             </property>
             <property name="text">
-             <string>密文数据【HEX 】：</string>
+             <string>密文数据【Hex 】：</string>
             </property>
            </widget>
           </item>

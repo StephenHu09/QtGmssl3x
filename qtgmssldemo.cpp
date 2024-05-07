@@ -39,6 +39,15 @@ void QtGmsslDemo::gmsslTest()
     SM2_KEY sm2_key;
     SM2_KEY pub_key;
 
+
+    /* pem 密钥文件，可以通过 https://the-x.cn/zh-cn/cryptography/Sm2.aspx 网站将 HEX 密钥数据转化成pem格式，再保存为文件即可 */
+
+    // 代码处理 TODO:
+        // 如何将 HEX 十六进制字符串格式的公钥和私钥转成pem格式的base64内容：
+        // 首先用 include/gmssl/hex.h 中的 hex_to_bytes 将公钥或者私钥转换成字节序列
+        // 然后用 sm2_key_set_public_key 或 sm2_key_set_private_key 将其转化为 SM2_KEY 类型
+        // 然后用 sm2_public_key_info_to_pem 或 sm2_private_key_info_encrypt_to_pem 将 SM2_KEY 写入PEM文件
+
     QString keyfile = "sm2.pem";
     QFile file(keyfile);
     if (!file.exists()) {
@@ -85,7 +94,7 @@ void QtGmsslDemo::gmsslTest()
     unsigned char ciphertext[SM2_MAX_CIPHERTEXT_SIZE];
     size_t len;
 
-    const char* str = "12345678";
+    const char* str = "cdxj@123456";
     QByteArray ba(str, strlen(str));
 
     sm2_encrypt(&pub_key, reinterpret_cast<uint8_t *>(ba.data()), ba.size(), ciphertext, &len);
