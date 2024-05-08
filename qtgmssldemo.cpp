@@ -4,7 +4,11 @@
 #include <QFile>
 #include <QDebug>
 
-#include "gmssl/hex.h"
+// 密钥生成工具 https://const.net.cn/tool/sm2/genkey/
+// 默认长度 64，代表32个字节
+static const char *PRIVATE_KEY = "520239279C961A507D5B219E7179AF7067B5BE908480A8651F2801DFF4998B0A";
+// 默认长度128，代表64个字节，忽略掉开头的 04
+static const char *PUBLIC_KEY = "8B9B618F42EE8949B97A4806D7575CAD0873D9F11E976902AF1BFCC95CB9C0EDFA4948138E5561CA5D02B42AD5F18873DDF1FBB07515F8B5E364331A3D16241F";
 
 QtGmsslDemo::QtGmsslDemo(QWidget *parent)
     : QMainWindow(parent)
@@ -13,6 +17,7 @@ QtGmsslDemo::QtGmsslDemo(QWidget *parent)
     ui->setupUi(this);
 
     initView();
+
     initData();
 
     gmsslTest();
@@ -26,276 +31,222 @@ QtGmsslDemo::~QtGmsslDemo()
 void QtGmsslDemo::initView()
 {
     this->resize(1440, 900);
+
+    QString priKey(PRIVATE_KEY);
+    QString pubKey(PUBLIC_KEY);
+    ui->lineEditSK->setText(priKey);
+    ui->lineEditPK->setText(pubKey);
 }
 
 void QtGmsslDemo::initData()
 {
-    loadSM2Key();
+
 }
 
 void QtGmsslDemo::gmsslTest()
 {
-    unsigned char plaintext[SM2_MAX_PLAINTEXT_SIZE];
-    unsigned char ciphertext[SM2_MAX_CIPHERTEXT_SIZE];
-    size_t len;
+    GmsslLib *gmsslObj = new GmsslLib(this);
+    gmsslObj->loadKeyFormHex(PRIVATE_KEY, PUBLIC_KEY);
 
-    const char* str = "cdxj@123456";
-    QByteArray ba(str, strlen(str));
+    // 字符串 加解密 ASN.1格式
+    QString str = "123456ASN1";
+    QString cipherStr = gmsslObj->sm2EncryptASN1(str);
+    qDebug() << "cipherStr ASN.1 :" << cipherStr; // 30 开头的密文
+    QString plainStr = gmsslObj->sm2DecryptASN1(cipherStr);
+    qDebug() << "ASN.1 解密结果 ：" <<  plainStr;
 
-    sm2_encrypt(&m_sm2PubKey, reinterpret_cast<uint8_t *>(ba.data()), ba.size(), ciphertext, &len);
-
-    QString hexString;
-    for (int i = 0; i < len; ++i) {
-        hexString.append(QString("%1").arg(ciphertext[i], 2, 16, QChar('0')));
-    }
-
-    // QString str = QString(QLatin1String(reinterpret_cast<const  char*>(ciphertext)));
-    qDebug() << "ciphertext len:" << len;
-    qDebug() << "ciphertext asn1 :" << hexString;
-
-    SM2_CIPHERTEXT ctxt;
-    sm2_do_encrypt(&m_sm2PriKey, reinterpret_cast<uint8_t *>(ba.data()), ba.size(), &ctxt);
-
-    QByteArray c1c3c2;
-    c1c3c2.append(static_cast<char>(0x04)); // 添加 0x04开头
-    QByteArray x(reinterpret_cast<const char*>(ctxt.point.x), 32);  // SM2_POINT.x[32];
-    QByteArray y(reinterpret_cast<const char*>(ctxt.point.y), 32);  // SM2_POINT.y[32];
-    QByteArray hash(reinterpret_cast<const char*>(ctxt.hash), 32);  // SM2_CIPHERTEXT.hash[32]
-    QByteArray cipherText1(reinterpret_cast<const char*>(ctxt.ciphertext), ctxt.ciphertext_size);
-
-    c1c3c2.append(x);
-    c1c3c2.append(y);
-    c1c3c2.append(hash);
-    c1c3c2.append(cipherText1);
-    QString hexStr2 = QString::fromUtf8(c1c3c2.toHex());
-    qDebug() << "ciphertext c1c3c2 :" << hexStr2;
-
-    sm2_decrypt(&m_sm2PriKey, ciphertext, len, plaintext, &len);
-    plaintext[len] = 0;
-    qDebug() << "plaintext: " << QString(QLatin1String(reinterpret_cast<const  char*>(plaintext)));
-
-    gmssl_secure_clear(&m_sm2PriKey, sizeof(m_sm2PriKey));
-    gmssl_secure_clear(&m_sm2PubKey, sizeof(m_sm2PubKey));
-
+    // 字符串 加解密 旧格式hex
+    QString str2 = "123456HEX";
+    QString cipherStr2 = gmsslObj->sm2EncryptHex(str2);
+    qDebug() << "cipherStr2 HEX :" << cipherStr2;
+    QString plainStr2 = gmsslObj->sm2DecryptHex(cipherStr2);
+    qDebug() << "HEX 解密结果 ：" <<  plainStr2;
 }
+
 
 void QtGmsslDemo::on_btnEncryption_clicked(bool checked)
 {
+    QString plainStr = ui->textPlain->text();
+    if (plainStr.isEmpty()) {
+        return;
+    }
 
+    // 公钥加密
+    QString pubKeyStr = ui->lineEditPK->text();
+    if (pubKeyStr.isEmpty()) {
+        qDebug() << "public key str is empty";
+        return;
+    }
+    if (pubKeyStr.startsWith("04")) {
+        pubKeyStr.remove(0, 2);
+    }
+    if (pubKeyStr.size() != 128) {
+        qDebug() << "public key str len is error";
+        return;
+    }
+
+    GmsslLib *gmsslObj = new GmsslLib(this);
+
+    if (gmsslObj->loadPublicKey(pubKeyStr) != 0) {
+        qDebug() << "public key load failed";
+        delete gmsslObj;
+        return;
+    }
+
+    QString cipherHexAsn1 = gmsslObj->sm2EncryptASN1(plainStr);
+    ui->textCipherDer->clear();
+    ui->textCipherDer->insertPlainText(cipherHexAsn1);
+
+    // 旧格式密文: 04开头密文，常用于后端， 去掉04开头的密文，常用于前端
+    QString cipherHex = gmsslObj->sm2EncryptHex(plainStr);
+    ui->textCipherFront->clear();
+    ui->textCipherFront->insertPlainText(cipherHex);
+    ui->textCipherBack->clear();
+    ui->textCipherBack->insertPlainText(cipherHex.prepend("04"));
+
+    delete gmsslObj;
 }
-
 
 void QtGmsslDemo::on_btnDecryption_clicked(bool checked)
 {
+    ui->decStr->clear();
 
+    QString cipherStr = ui->textCipherStr->toPlainText();
+    if (cipherStr.isEmpty()) {
+        return;
+    }
+
+    // 私钥解密
+    QString priKeyStr = ui->lineEditSK->text();
+    if (priKeyStr.isEmpty() || priKeyStr.size() != 64) {
+        qDebug() << "private key str is error";
+        return;
+    }
+
+    GmsslLib *gmsslObj = new GmsslLib(this);
+    if (gmsslObj->loadPrivateKey(priKeyStr) != 0) {
+        qDebug() << "private key load failed";
+        delete gmsslObj;
+        return;
+    }
+
+    QString plainStr;
+    if (ui->comboBoxEncryType->currentIndex() == 0) {
+        plainStr = gmsslObj->sm2DecryptASN1(cipherStr);
+        ui->decStr->setText(plainStr);
+    } else {
+        plainStr = gmsslObj->sm2DecryptHex(cipherStr);
+        ui->decStr->setText(plainStr);
+    }
+
+    if (!plainStr.isEmpty()) {
+        qDebug() << "解密成功 Plain Text =" << plainStr;
+    }
+
+    delete gmsslObj;
 }
-
 
 void QtGmsslDemo::on_textPlain_textChanged(const QString &arg1)
 {
 
 }
 
-
 void QtGmsslDemo::on_decStr_textChanged(const QString &arg1)
 {
 
 }
-
 
 void QtGmsslDemo::on_comboBoxEncryType_currentIndexChanged(int index)
 {
 
 }
 
-
 void QtGmsslDemo::on_comboBoxType_currentIndexChanged(int index)
 {
 
 }
 
-void QtGmsslDemo::loadSM2Key()
+void QtGmsslDemo::on_btnPriSave_clicked(bool checked)
 {
-    // 下面两种方式二选一
-    loadKeyFormHex();
+    QString priKeyStr = ui->lineEditSK->text();
 
-    // loadKeyFormPem();
-}
-
-void QtGmsslDemo::loadKeyFormPem()
-{
-    /* pem 密钥文件，可以先通过内部接口 savePrivateKeyToPem 和 savePublicKeyToPem 生成，
-     * 也可以通过 https://the-x.cn/zh-cn/cryptography/Sm2.aspx 网站将 HEX 密钥数据转化成pem格式，
-     * 再保存为文件即可，不过两种方式的私钥pem文件格式有差异，对应加载解析接口不同，需要注意 */
-
-    QString keyfile = "sm2_prikey.pem";
-    QFile file(keyfile);
-    if (!file.exists()) {
-        qDebug() << "File does not exist:" << keyfile;
+    if (priKeyStr.isEmpty() || priKeyStr.size() != 64) {
+        qDebug() << "private key str is error";
         return;
     }
 
-    FILE *keyfp = fopen(keyfile.toStdString().c_str(), "rb"); // "r" 表示只读，可以根据需要更改
-    if (!keyfp) {
-        qDebug() << "Failed to open file:" << keyfile;
-        return; // 或者处理错误
-    }
+    GmsslLib *gmsslObj = new GmsslLib(this);
 
-    /*
-     * 注： 使用网站 https://the-x.cn/zh-cn/cryptography/Sm2.aspx 生成的 pem 文件格式数据，
-     * 是 -----BEGIN EC PRIVATE KEY----- 格式的数据，
-     * 需要使用 sm2_private_key_from_pem 接口进行加载才能正确解析
-     */
-
-    if (sm2_private_key_info_from_pem(&m_sm2PriKey, keyfp) != 1) {
-        qDebug() << "load key failure";
+    if (gmsslObj->loadPrivateKey(priKeyStr) != 0) {
+        qDebug() << "private key load failed";
+        delete gmsslObj;
         return;
     }
 
-    qDebug() << "load private key success : " << keyfile;
-
-
-    QString pubkeyfile = "sm2_pubkey.pem";
-    QFile pubfile(pubkeyfile);
-    if (!pubfile.exists()) {
-        qDebug() << "File does not exist:" << pubkeyfile;
+    if (gmsslObj->savePrivateKeyToPem("test_pri.pem") != 0) {
+        qDebug() << "private key save pem failed";
+        delete gmsslObj;
         return;
     }
 
-    FILE *pubkeyfp = fopen(pubkeyfile.toStdString().c_str(), "rb"); // "r" 表示只读，可以根据需要更改
-    if (!pubkeyfp) {
-        qDebug() << "Failed to open pubkeyfile :" << pubkeyfile;
-        return;
-    }
-
-    if (sm2_public_key_info_from_pem(&m_sm2PubKey, pubkeyfp) != 1) {
-        qDebug() << "load public key failure";
-        return;
-    }
-
-    qDebug() << "load public key success : " << pubkeyfile;
-
-    if (keyfp) {
-        fclose(keyfp);
-        keyfp = nullptr;
-    }
-
-    if (pubkeyfp) {
-        fclose(pubkeyfp);
-        pubkeyfp = nullptr;
-    }
-}
-
-void QtGmsslDemo::loadKeyFormHex()
-{
-    // 代码处理 :
-    // 如何将 HEX 十六进制字符串格式的公钥和私钥转成pem格式的base64内容：
-    // 1. 首先用 include/gmssl/hex.h 中的 hex_to_bytes 将公钥或者私钥转换成字节序列
-    // 2. 然后用 sm2_key_set_public_key 或 sm2_key_set_private_key 将其转化为 SM2_KEY 类型
-    // 3. 然后用 sm2_public_key_info_to_pem 或 sm2_private_key_info_encrypt_to_pem 将 SM2_KEY 写入PEM文件
-
-    // 默认长度 64，代表32个字节
-    const char *privateKey = "3037723d47292171677ec8bd7dc9af696c7472bc5f251b2cec07e65fdef22e25";
-
-    // 默认长度128，代表64个字节，忽略掉开头的 04
-    const char *publicKey = "298364ec840088475eae92a591e01284d1abefcda348b47eb324bb521bb03b0b2a5bc393f6b71dabb8f15c99a0050818b56b23f31743b93df9cf8948f15ddb54";
-
-
-    uint8_t priBytes[32];
-    size_t priLen;
-    hex_to_bytes(privateKey, 64, priBytes, &priLen);
-
-    sm2_z256_t private_key;
-    sm2_z256_from_bytes(private_key, priBytes);
-    if (sm2_key_set_private_key(&m_sm2PriKey, private_key) != 1) {
-        gmssl_secure_clear(private_key, 32);
-        qDebug() << "HEX set private key failed";
-        return;
-    }
-    gmssl_secure_clear(private_key, 32);
-    qDebug() << "HEX set private key success";
-
-    savePrivateKeyToPem(&m_sm2PriKey, "sm2_prikey.pem");
-
-
-    uint8_t pubBytes[64];
-    size_t pubLen;
-    hex_to_bytes(publicKey, 128, pubBytes, &pubLen);
-
-    SM2_Z256_POINT point;
-    if (sm2_z256_point_from_bytes(&point, pubBytes) != 1) {
-        qDebug() << "HEX set public key point failed";
-        return;
-    }
-
-    if (sm2_key_set_public_key(&m_sm2PubKey, &point) != 1) {
-        qDebug() << "HEX set public key failed";
-        return;
-    }
-    qDebug() << "HEX set public key success";
-
-    savePublicKeyToPem(&m_sm2PubKey, "sm2_pubkey.pem");
+    qDebug() << "private key save pem success";
+    delete gmsslObj;
 
 }
 
-void QtGmsslDemo::savePrivateKeyToPem(SM2_KEY *priKey, const QString &path)
+void QtGmsslDemo::on_btnPubSave_clicked(bool checked)
 {
-    if (path.isEmpty()) {
+    QString pubKeyStr = ui->lineEditPK->text();
+
+    if (pubKeyStr.isEmpty()) {
+        qDebug() << "public key str is empty";
+        return;
+    }
+    // 去掉 04 头
+    if (pubKeyStr.startsWith("04")) {
+        pubKeyStr.remove(0, 2);
+    }
+    if (pubKeyStr.size() != 128) {
+        qDebug() << "public key str len is error";
         return;
     }
 
+    GmsslLib *gmsslObj = new GmsslLib(this);
 
-    QString priKeyfile = path;
-    QFile file(priKeyfile);
-    FILE *prifp = fopen(priKeyfile.toStdString().c_str(), "w");
-    if (!prifp) {
-        qDebug() << "Failed to open file:" << priKeyfile;
-        return; // 或者处理错误
-    }
-
-    // 注：sm2_private_key_to_pem 将生成 -----BEGIN EC PRIVATE KEY----- 格式的pem文件
-    //    而 sm2_private_key_info_to_pem 接口生成的是 -----BEGIN PRIVATE KEY----- 格式的pem文件，
-    //    相应的，使用不同接口生成的pem，也要使用对应的 from 接口进行解析，不然会不匹配报错。
-    //    sm2_private_key_to_pem 对应 sm2_private_key_from_pem ；
-    //    sm2_private_key_info_to_pem 对应 sm2_private_key_info_from_pem ；
-
-    if (sm2_private_key_info_to_pem(&m_sm2PriKey, prifp) != 1) {
-        qDebug() << "save private key pem failure";
-        fclose(prifp);
-        prifp = nullptr;
+    if (gmsslObj->loadPublicKey(pubKeyStr) != 0) {
+        qDebug() << "public key load failed";
+        delete gmsslObj;
         return;
     }
 
-    qDebug() << "save private key pem success";
+    if (gmsslObj->savePublicKeyToPem("test_pub.pem") != 0) {
+        qDebug() << "public key save pem failed";
+        delete gmsslObj;
+        return;
+    }
 
-    fclose(prifp);
-    prifp = nullptr;
+    qDebug() << "public key save pem success";
+    delete gmsslObj;
 }
 
-void QtGmsslDemo::savePublicKeyToPem(SM2_KEY *pubKey, const QString &path)
+
+void QtGmsslDemo::on_textCipherStr_textChanged()
 {
-    if (path.isEmpty()) {
+    QString str = ui->textCipherStr->toPlainText();
+
+    if (str.isEmpty() || str.size() < 2) {
         return;
     }
 
-    QString pubKeyfile = path;
-    QFile file(pubKeyfile);
-    FILE *pubfp = fopen(pubKeyfile.toStdString().c_str(), "w");
-    if (!pubfp) {
-        qDebug() << "Failed to open file:" << pubKeyfile;
-        return;
+    if (str.startsWith("30")) {
+        ui->comboBoxEncryType->setCurrentIndex(0);
+    } else {
+        ui->comboBoxEncryType->setCurrentIndex(1);
     }
+}
 
-    if (sm2_public_key_info_to_pem(&m_sm2PubKey, pubfp) != 1) {
-        qDebug() << "save private key pem failure";
-        fclose(pubfp);
-        pubfp = nullptr;
-        return;
-    }
-
-    qDebug() << "save private key pem success";
-
-    fclose(pubfp);
-    pubfp = nullptr;
+void QtGmsslDemo::on_btnDecClear_clicked()
+{
+    ui->decStr->clear();
 }
 

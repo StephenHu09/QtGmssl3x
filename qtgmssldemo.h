@@ -3,8 +3,7 @@
 
 #include <QMainWindow>
 
-#include "gmssl/sm2.h"
-#include "gmssl/mem.h"
+#include "gmssllib.h"
 
 QT_BEGIN_NAMESPACE
 namespace Ui {
@@ -20,8 +19,10 @@ public:
     QtGmsslDemo(QWidget *parent = nullptr);
     ~QtGmsslDemo();
 
+private:
     void initView();
     void initData();
+    void gmsslTest();
 
 private slots:
     void on_btnEncryption_clicked(bool checked);
@@ -36,21 +37,17 @@ private slots:
 
     void on_comboBoxType_currentIndexChanged(int index);
 
-private:
-    void gmsslTest();
+    void on_btnPriSave_clicked(bool checked);
 
-    void loadSM2Key();
+    void on_btnPubSave_clicked(bool checked);
 
-    void loadKeyFormPem();
+    void on_textCipherStr_textChanged();
 
-    void loadKeyFormHex();
-
-    void savePrivateKeyToPem(SM2_KEY *priKey, const QString &path);
-
-    void savePublicKeyToPem(SM2_KEY *pubKey, const QString &path);
+    void on_btnDecClear_clicked();
 
 private:
     Ui::QtGmsslDemo *ui;
+    // GmsslLib *gmsslObj;
 
     SM2_KEY m_sm2PriKey;
     SM2_KEY m_sm2PubKey;
