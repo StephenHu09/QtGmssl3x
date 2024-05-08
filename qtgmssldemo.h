@@ -31,8 +31,6 @@ private slots:
 
     void on_textPlain_textChanged(const QString &arg1);
 
-    void on_decStr_textChanged(const QString &arg1);
-
     void on_comboBoxEncryType_currentIndexChanged(int index);
 
     void on_comboBoxType_currentIndexChanged(int index);

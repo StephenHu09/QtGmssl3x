@@ -32,15 +32,24 @@ void QtGmsslDemo::initView()
 {
     this->resize(1440, 900);
 
-    QString priKey(PRIVATE_KEY);
-    QString pubKey(PUBLIC_KEY);
-    ui->lineEditSK->setText(priKey);
-    ui->lineEditPK->setText(pubKey);
+    // 设置样式表
+    QString style1 = "QGroupBox{background-color: #c7e0f4;}";
+    ui->groupBox1->setStyleSheet(style1);
+
+    QString style2 = "QGroupBox{background-color: #f7eead;}";
+    ui->groupBox2->setStyleSheet(style2);
+    ui->WidgetEnc->setStyleSheet("QWidget#WidgetEnc{background-color: #f7eead;}");
+
+    QString style3 = "QGroupBox{background-color: #d3f9d8;}";
+    ui->groupBox3->setStyleSheet(style3);
 }
 
 void QtGmsslDemo::initData()
 {
-
+    QString priKey(PRIVATE_KEY);
+    QString pubKey(PUBLIC_KEY);
+    ui->lineEditSK->setText(priKey);
+    ui->lineEditPK->setText(pubKey);
 }
 
 void QtGmsslDemo::gmsslTest()
@@ -148,12 +157,9 @@ void QtGmsslDemo::on_btnDecryption_clicked(bool checked)
 
 void QtGmsslDemo::on_textPlain_textChanged(const QString &arg1)
 {
-
-}
-
-void QtGmsslDemo::on_decStr_textChanged(const QString &arg1)
-{
-
+    ui->textCipherDer->clear();
+    ui->textCipherFront->clear();
+    ui->textCipherBack->clear();
 }
 
 void QtGmsslDemo::on_comboBoxEncryType_currentIndexChanged(int index)
@@ -232,8 +238,9 @@ void QtGmsslDemo::on_btnPubSave_clicked(bool checked)
 
 void QtGmsslDemo::on_textCipherStr_textChanged()
 {
-    QString str = ui->textCipherStr->toPlainText();
+    ui->decStr->clear();
 
+    QString str = ui->textCipherStr->toPlainText();
     if (str.isEmpty() || str.size() < 2) {
         return;
     }
