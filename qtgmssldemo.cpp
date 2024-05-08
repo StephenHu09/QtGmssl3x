@@ -102,6 +102,7 @@ void QtGmsslDemo::on_btnEncryption_clicked(bool checked)
         return;
     }
 
+
     QString cipherHexAsn1 = gmsslObj->sm2EncryptASN1(plainStr);
     ui->textCipherDer->clear();
     ui->textCipherDer->insertPlainText(cipherHexAsn1);
@@ -124,6 +125,8 @@ void QtGmsslDemo::on_btnDecryption_clicked(bool checked)
     if (cipherStr.isEmpty()) {
         return;
     }
+
+    cipherStr.replace(QRegExp("[^0-9A-Fa-f]"), ""); // 移除非Hex数据
 
     // 私钥解密
     QString priKeyStr = ui->lineEditSK->text();
