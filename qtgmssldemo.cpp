@@ -3,6 +3,7 @@
 
 #include <QFile>
 #include <QDebug>
+#include <QMessageBox>
 
 // 密钥生成工具 https://const.net.cn/tool/sm2/genkey/
 // 默认长度 64，代表32个字节
@@ -77,6 +78,7 @@ void QtGmsslDemo::on_btnEncryption_clicked(bool checked)
 {
     QString plainStr = ui->textPlain->text();
     if (plainStr.isEmpty()) {
+        QMessageBox::information(this, QString("提示"), QString("请输入待加密数据"));
         return;
     }
 
@@ -84,6 +86,7 @@ void QtGmsslDemo::on_btnEncryption_clicked(bool checked)
     QString pubKeyStr = ui->lineEditPK->text();
     if (pubKeyStr.isEmpty()) {
         qDebug() << "public key str is empty";
+        QMessageBox::information(this, QString("错误"), QString("请输入公钥Hex"));
         return;
     }
     if (pubKeyStr.startsWith("04")) {
@@ -91,6 +94,7 @@ void QtGmsslDemo::on_btnEncryption_clicked(bool checked)
     }
     if (pubKeyStr.size() != 128) {
         qDebug() << "public key str len is error";
+        QMessageBox::information(this, QString("错误"), QString("公钥格式错误"));
         return;
     }
 
@@ -98,6 +102,7 @@ void QtGmsslDemo::on_btnEncryption_clicked(bool checked)
 
     if (gmsslObj->loadPublicKey(pubKeyStr) != 0) {
         qDebug() << "public key load failed";
+        QMessageBox::information(this, QString("错误"), QString("公钥解析失败"));
         delete gmsslObj;
         return;
     }
@@ -123,6 +128,7 @@ void QtGmsslDemo::on_btnDecryption_clicked(bool checked)
 
     QString cipherStr = ui->textCipherStr->toPlainText();
     if (cipherStr.isEmpty()) {
+        QMessageBox::information(this, QString("提示"), QString("请输入密文"));
         return;
     }
 
@@ -132,12 +138,14 @@ void QtGmsslDemo::on_btnDecryption_clicked(bool checked)
     QString priKeyStr = ui->lineEditSK->text();
     if (priKeyStr.isEmpty() || priKeyStr.size() != 64) {
         qDebug() << "private key str is error";
+        QMessageBox::information(this, QString("提示"), QString("起输入私钥Hex"));
         return;
     }
 
     GmsslLib *gmsslObj = new GmsslLib(this);
     if (gmsslObj->loadPrivateKey(priKeyStr) != 0) {
         qDebug() << "private key load failed";
+        QMessageBox::information(this, QString("错误"), QString("密钥解析错误"));
         delete gmsslObj;
         return;
     }
@@ -153,6 +161,8 @@ void QtGmsslDemo::on_btnDecryption_clicked(bool checked)
 
     if (!plainStr.isEmpty()) {
         qDebug() << "解密成功 Plain Text =" << plainStr;
+    } else {
+        QMessageBox::information(this, QString("错误"), QString("解密失败"));
     }
 
     delete gmsslObj;
@@ -181,12 +191,14 @@ void QtGmsslDemo::on_btnPriSave_clicked(bool checked)
 
     if (priKeyStr.isEmpty() || priKeyStr.size() != 64) {
         qDebug() << "private key str is error";
+        QMessageBox::information(this, QString("错误"), QString("保存失败，无效的私钥"));
         return;
     }
 
     GmsslLib *gmsslObj = new GmsslLib(this);
 
     if (gmsslObj->loadPrivateKey(priKeyStr) != 0) {
+        QMessageBox::information(this, QString("错误"), QString("保存失败，私钥解析失败"));
         qDebug() << "private key load failed";
         delete gmsslObj;
         return;
@@ -194,11 +206,16 @@ void QtGmsslDemo::on_btnPriSave_clicked(bool checked)
 
     if (gmsslObj->savePrivateKeyToPem("test_pri.pem") != 0) {
         qDebug() << "private key save pem failed";
+        QMessageBox::information(this, QString("错误"), QString("私钥pem文件保存失败"));
         delete gmsslObj;
         return;
     }
 
-    qDebug() << "private key save pem success";
+
+    QString savePath = QCoreApplication::applicationDirPath() + "/" + "test_pri.pem";
+    qDebug() << "private key save pem success : " << savePath;
+    QMessageBox::information(this, QString("提示"), QString("私钥pem文件保存成功, %1").arg(savePath));
+
     delete gmsslObj;
 
 }
@@ -209,6 +226,7 @@ void QtGmsslDemo::on_btnPubSave_clicked(bool checked)
 
     if (pubKeyStr.isEmpty()) {
         qDebug() << "public key str is empty";
+        QMessageBox::information(this, QString("错误"), QString("保存失败，无效的公钥"));
         return;
     }
     // 去掉 04 头
@@ -224,17 +242,22 @@ void QtGmsslDemo::on_btnPubSave_clicked(bool checked)
 
     if (gmsslObj->loadPublicKey(pubKeyStr) != 0) {
         qDebug() << "public key load failed";
+        QMessageBox::information(this, QString("错误"), QString("保存失败，公钥解析失败"));
         delete gmsslObj;
         return;
     }
 
     if (gmsslObj->savePublicKeyToPem("test_pub.pem") != 0) {
         qDebug() << "public key save pem failed";
+        QMessageBox::information(this, QString("错误"), QString("公钥pem文件保存失败"));
         delete gmsslObj;
         return;
     }
 
-    qDebug() << "public key save pem success";
+    QString savePath = QCoreApplication::applicationDirPath() + "/" + "test_pub.pem";
+    qDebug() << "public key save pem success : " << savePath;
+    QMessageBox::information(this, QString("提示"), QString("公钥pem文件保存成功, %1").arg(savePath));
+
     delete gmsslObj;
 }
 
